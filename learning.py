@@ -7,6 +7,7 @@ WIDTH, HEIGHT = 900, 500
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Game 1 -ben") #sets our window name
 
+
 WHITE = (255,255,255)
 YELLOWCOLOR = (255,255,0)
 REDCOLOR = (255,0,0)
@@ -118,16 +119,85 @@ def draw_win(text):
 
 
 
+def generate_presses(yellow_bullets, red_bullets, yellow, self, next_move):
+    # analyze position of enemy (yellow), count of bullets, location of enemy bullets, current position
+    # decide if attack is possible, if so, move towards enemy y cord, and decide if firing is good (possible to do, and likely to hit)
+    # if not, likely in danger, look to move away from enemy pos/bullets
+    # Constants
+    THREAT_RADIUS = 300  # Distance within which a bullet is considered a threat
+    Y_MARGIN = 60        # Y-axis margin for bullet evasion
+    X_MARGIN = 26        # X-axis margin for self
+
+    # Initialize danger level and closest threat
+    max_danger = 0
+    closest_bullet = None
+
+    # Analyze each bullet to determine the closest and most dangerous threat
+    for bullet in yellow_bullets:
+        distance = (self.x + X_MARGIN) - (bullet.x + 5)
+        y_distance = abs(bullet.y - (20 + self.y))
+
+        if 0 < distance <= THREAT_RADIUS and y_distance < Y_MARGIN:
+            danger_level = THREAT_RADIUS - distance  # Higher danger for closer bullets
+            if danger_level > max_danger:
+                max_danger = danger_level
+                closest_bullet = bullet
+
+    #print(next_move)
+    if (next_move != 0):
+        if(next_move > 0):
+            self.y += VEL
+            next_move -= 1
+        else:
+            self.y -= VEL
+            next_move += 1
+
+    elif closest_bullet:
+        if self.y < 75:
+            next_move = 7
+            self.y += VEL
+        elif self.y > 425:
+            next_move = -7
+            self.y -= VEL
+        else:
+            if (self.y + 20) - (closest_bullet.y + 2) < 0:
+                self.y -= VEL
+            else:
+                self.y += VEL
+    return next_move
+    """danger = -1
+    i = 0
+    for bullet in yellow_bullets: # danger check
+        if((self.x + 26) - (bullet.x + 5) <= 300 and ((self.x + 26) - (bullet.x + 5) > 0) and abs(bullet.y - (20 + self.y)) < 30):
+            danger = i
+            break
+        i = i + 1
+    if(danger > -1):
+        if(self.y < 50):
+            #at top
+            self.y += VEL
+        elif(self.y > 450):
+            # at bottom
+            self.y -= VEL
+        else:
+            incoming = yellow_bullets[i]
+            if((self.y + 20) - (incoming.y + 2) < 0):
+                self.y -= VEL
+            else:
+                self.y += VEL"""
+
+
+
 def main():
     #define two rects as our red/yellow ship
     red = pygame.Rect(700, 300, SHIP_WIDTH, SHIP_HEIGHT)
     yellow = pygame.Rect(100, 300, SHIP_WIDTH, SHIP_HEIGHT)
-    
     #handling bullets
     red_bullets = []
     yellow_bullets = []
     red_health = 7
     yellow_health = 7
+    next_move = 0
     #main game loop
     clock = pygame.time.Clock() #sets our game to 60 fps
     run = True
@@ -174,8 +244,9 @@ def main():
 
         #movement for the loop
         keys_pressed = pygame.key.get_pressed() #grabs key presses for every frame
+        
         yellow_movement(keys_pressed, yellow)
-        red_movement(keys_pressed, red)
+        next_move = generate_presses(yellow_bullets, red_bullets, yellow, red, next_move)
         handle_bullets(yellow_bullets, red_bullets, yellow, red) #ideas - bullet collision? ammo?
 
 
